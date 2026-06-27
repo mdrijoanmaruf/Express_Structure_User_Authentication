@@ -1,465 +1,436 @@
-# 📦 Express Modular Structure — JWT Auth Notes
+# Express Modular Structure + JWT Auth — Revision Notes
 
-> A complete reference guide for the **Express + TypeScript + PostgreSQL + JWT** authentication project.  
-> Author: **Md Rijoan Maruf**
-
----
-
-## 📋 Table of Contents
-
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Installation & Setup](#-installation--setup)
-- [Environment Variables](#-environment-variables)
-- [TypeScript Configuration](#-typescript-configuration)
-- [Database Schema](#-database-schema)
-- [Module Flow](#-module-flow)
-  - [User Module](#-user-module)
-  - [Auth Module](#-auth-module)
-  - [Profile Module](#-profile-module)
-- [API Endpoints](#-api-endpoints)
-- [Request & Response Format](#-request--response-format)
-- [JWT Flow](#-jwt-flow)
-- [Common Errors & Fixes](#-common-errors--fixes)
+> **Goal:** Build an Express + TypeScript + PostgreSQL + JWT authentication app with modular folder structure.  
+> Use this note to revise the full setup process from scratch.
 
 ---
 
-## 🛠 Tech Stack
+## STEP 1 — Initialize Project
 
-| Layer | Technology |
-|---|---|
-| Runtime | Node.js |
-| Language | TypeScript |
-| Framework | Express.js v5 |
-| Database | PostgreSQL (via `pg`) |
-| Password Hashing | `bcryptjs` |
-| Auth Token | `jsonwebtoken` (JWT) |
-| Dev Runner | `tsx watch` |
-| Config | `dotenv` |
-
----
-
-## 🗂 Project Structure
-
-```
-Express_Structure_User_Authentication/
-├── src/
-│   ├── server.ts               # Entry point — starts server & DB
-│   ├── app.ts                  # Express app setup & route mounting
-│   ├── config/
-│   │   └── index.ts            # Environment variable config
-│   ├── db/
-│   │   └── index.ts            # PostgreSQL pool & table initialization
-│   └── modules/
-│       ├── user/
-│       │   ├── user.interface.ts
-│       │   ├── user.service.ts
-│       │   ├── user.controller.ts
-│       │   └── user.route.ts
-│       ├── auth/
-│       │   ├── auth.service.ts
-│       │   ├── auth.controller.ts
-│       │   └── auth.route.ts
-│       └── profile/
-│           ├── profile.service.ts
-│           ├── profile.controller.ts
-│           └── profile.route.ts
-├── .env
-├── package.json
-└── tsconfig.json
-```
-
----
-
-## 🚀 Installation & Setup
-
-### 1. Clone or Initialize Project
+> Creates a new Node.js project and generates `package.json`.
 
 ```bash
-mkdir my-project && cd my-project
 npm init -y
 ```
 
-### 2. Install Production Dependencies
+Then add `"type": "module"` inside `package.json` — this enables **ESM (ES Modules)** syntax (`import/export`) instead of CommonJS (`require`).
 
+---
+
+## STEP 2 — Install Packages
+
+> Install all required runtime and development packages.
+
+**Dependencies** — used in production:
 ```bash
+# express: web framework | pg: PostgreSQL client
+# dotenv: load .env vars | bcryptjs: hash passwords | jsonwebtoken: create JWT tokens
 npm install express pg dotenv bcryptjs jsonwebtoken
 ```
 
-### 3. Install Development Dependencies
-
+**Dev Dependencies** — only used during development:
 ```bash
-npm install -D typescript tsx @types/express @types/pg @types/bcryptjs @types/jsonwebtoken
+# typescript: TS compiler | tsx: run TS files directly without compiling
+# @types/*: type definitions for the installed packages
+npm install -D typescript tsx @types/express @types/pg @types/jsonwebtoken
 ```
 
-### 4. Generate tsconfig.json
+> `tsx watch` watches for file changes and restarts automatically — replaces `nodemon` for TypeScript.
+
+---
+
+## STEP 3 — tsconfig.json
+
+> Configure how TypeScript compiles your code.
 
 ```bash
-npx tsc --init
+npx tsc --init   # generates a default tsconfig.json
 ```
 
-### 5. Add Scripts to `package.json`
-
+Key settings to set manually:
 ```json
 {
-  "type": "module",
-  "scripts": {
-    "dev": "tsx watch ./src/server.ts",
-    "build": "tsc"
+  "compilerOptions": {
+    "rootDir": "./src",       // TypeScript source files live here
+    "outDir": "./dist",       // Compiled JS output goes here
+    "module": "nodenext",     // Use Node.js native ESM module resolution
+    "target": "esnext",       // Compile to modern JavaScript
+    "strict": true            // Enable all strict type checks
   }
 }
 ```
 
-### 6. Run Dev Server
+> ⚠️ **Important:** With `"module": "nodenext"` — always use `.js` extension in imports, even in `.ts` files:
+> ```ts
+> import { pool } from "../../db/index.js"  // ✅ correct — .js required
+> import { pool } from "../../db/index"     // ❌ wrong — will fail at runtime
+> ```
 
+---
+
+## STEP 4 — Dev Script in package.json
+
+> Add a script to run the dev server easily.
+
+```json
+"scripts": {
+  "dev": "tsx watch ./src/server.ts"   // watches src/server.ts and restarts on change
+}
+```
+
+Run with:
 ```bash
 npm run dev
 ```
 
 ---
 
-## 🔐 Environment Variables
+## STEP 5 — Folder Structure
 
-Create a `.env` file in the root of the project:
+> Every feature lives in its own module folder. Each module has 4 files: interface, service, controller, route.
 
-```env
-CONNECTION_STRING=postgresql://username:password@host:port/dbname
-PORT=3000
-JWT_SECRETE=your_super_secret_key_here
 ```
-
-> ⚠️ **Never commit `.env` to Git.** Add it to `.gitignore`.
+src/
+├── server.ts           ← entry point: starts server + DB
+├── app.ts              ← express app setup + mount all routes
+├── config/
+│   └── index.ts        ← reads .env and exports config object
+├── db/
+│   └── index.ts        ← creates pg pool + initializes DB tables
+└── modules/
+    ├── user/
+    │   ├── user.interface.ts    ← TypeScript type for User
+    │   ├── user.service.ts      ← DB query functions (CRUD)
+    │   ├── user.controller.ts   ← handles req/res, calls service
+    │   └── user.route.ts        ← maps routes to controllers
+    ├── auth/
+    │   ├── auth.service.ts      ← login logic + JWT generation
+    │   ├── auth.controller.ts   ← handles login req/res
+    │   └── auth.route.ts        ← POST /login route
+    └── profile/
+        ├── profile.service.ts   ← create profile DB logic
+        ├── profile.controller.ts
+        └── profile.route.ts
+```
 
 ---
 
-## ⚙️ TypeScript Configuration
+## STEP 6 — .env File
 
-Key settings in `tsconfig.json`:
+> Store sensitive config values outside your code. Never commit this file.
 
-```json
-{
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "module": "nodenext",
-    "target": "esnext",
-    "strict": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "skipLibCheck": true
+```env
+# PostgreSQL connection string from your hosting provider (e.g. Neon, Supabase, local)
+CONNECTION_STRING=postgresql://user:pass@host:port/dbname
+
+PORT=3000
+
+# Secret key used to sign JWT tokens — keep this private and strong
+JWT_SECRETE=your_super_secret_key_here
+```
+
+> Add `.env` to `.gitignore` so it's never pushed to GitHub.
+
+---
+
+## STEP 7 — config/index.ts
+
+> Centralizes all env variable reading in one place. Import `config` everywhere instead of `process.env` directly.
+
+```ts
+import dotenv from "dotenv"
+import path from "path"
+
+// Load .env file from the project root
+dotenv.config({ path: path.join(process.cwd(), ".env") })
+
+const config = {
+  connection_string: process.env.CONNECTION_STRING as string, // cast to string (env vars are string | undefined)
+  port: process.env.PORT,                                     // server port
+  secrete: process.env.JWT_SECRETE,                           // JWT secret key
+}
+
+export default config
+```
+
+---
+
+## STEP 8 — db/index.ts
+
+> Creates the PostgreSQL connection pool and auto-creates tables when the server starts.
+
+```ts
+import { Pool } from "pg"
+import config from "../config/index.js"
+
+// Pool manages multiple DB connections efficiently
+export const pool = new Pool({ connectionString: config.connection_string })
+
+export const initDB = async () => {
+  try {
+    // Create users table if it doesn't already exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users(
+        id         SERIAL PRIMARY KEY,        -- auto-increment ID
+        name       VARCHAR(20),
+        email      VARCHAR(20) UNIQUE NOT NULL,
+        password   VARCHAR(20) NOT NULL,
+        is_active  BOOLEAN DEFAULT true,      -- soft-disable user without deleting
+        age        INT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    // Create profiles table — linked to users via foreign key
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS profiles(
+        id         SERIAL PRIMARY KEY,
+        user_id    INT UNIQUE REFERENCES users(id) ON DELETE CASCADE,  -- FK: 1 profile per user
+        bio        TEXT,
+        address    TEXT,
+        phone      VARCHAR(15),
+        gender     VARCHAR(10),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+    console.log("Database connected successfully")
+  } catch (error) {
+    console.log(error)
   }
 }
 ```
 
-> **Note:** With `"module": "nodenext"`, all local imports must use `.js` extension even in `.ts` files:
-> ```ts
-> import { pool } from "../../db/index.js"; // ✅ correct
-> import { pool } from "../../db/index";    // ❌ wrong
-> ```
+> `REFERENCES users(id) ON DELETE CASCADE` — if a user is deleted, their profile row is also automatically deleted.
 
 ---
 
-## 🗄️ Database Schema
+## STEP 9 — server.ts
 
-### `users` Table
+> The actual entry point. Calls `initDB()` to set up tables, then starts the HTTP server.
 
-```sql
-CREATE TABLE IF NOT EXISTS users (
-  id         SERIAL PRIMARY KEY,
-  name       VARCHAR(20),
-  email      VARCHAR(20) UNIQUE NOT NULL,
-  password   VARCHAR(20) NOT NULL,
-  is_active  BOOLEAN DEFAULT true,
-  age        INT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
+```ts
+import app from "./app.js"
+import config from "./config/index.js"
+import { initDB } from "./db/index.js"
+
+const main = () => {
+  initDB()                           // create tables if they don't exist
+  app.listen(config.port, () => {
+    console.log(`Server running on port ${config.port}`)
+  })
+}
+
+main()  // kick everything off
 ```
-
-### `profiles` Table
-
-```sql
-CREATE TABLE IF NOT EXISTS profiles (
-  id         SERIAL PRIMARY KEY,
-  user_id    INT UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-  bio        TEXT,
-  address    TEXT,
-  phone      VARCHAR(15),
-  gender     VARCHAR(10),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-> **Key:** `user_id` is a **foreign key** to `users(id)` with `ON DELETE CASCADE` — if a user is deleted, their profile is also deleted automatically.
 
 ---
 
-## 🔄 Module Flow
+## STEP 10 — app.ts
 
-### Request Lifecycle
+> Sets up Express, applies middleware, and mounts all module routes.
+
+```ts
+import express from "express"
+import { userRoute } from "./modules/user/user.route.js"
+import { authRoute } from "./modules/auth/auth.route.js"
+import { profileRoute } from "./modules/profile/profile.route.js"
+
+const app = express()
+
+// Middleware — parse incoming request bodies
+app.use(express.json())                          // parse JSON body
+app.use(express.urlencoded({ extended: true })) // parse form/url-encoded body
+
+// Mount module routers at their base paths
+app.use("/api/users", userRoute)
+app.use("/api/auth", authRoute)
+app.use("/api/profile", profileRoute)
+
+export default app
+```
+
+---
+
+## STEP 11 — Modular Pattern (Route → Controller → Service)
+
+> Every module follows this exact 3-layer flow. The same pattern repeats for every feature.
 
 ```
 HTTP Request
-    │
-    ▼
-app.ts (Route Mounting)
-    │
-    ▼
-module.route.ts (Router)
-    │
-    ▼
-module.controller.ts (Handle req/res)
-    │
-    ▼
-module.service.ts (Business Logic + DB Query)
-    │
-    ▼
-PostgreSQL (via pg Pool)
-    │
-    ▼
-Response (JSON)
+     │
+     ▼
+route.ts        ← maps URL + method to a controller function
+     │
+     ▼
+controller.ts   ← receives req/res, calls service, sends response
+     │
+     ▼
+service.ts      ← runs the actual SQL query via pool, returns result
+     │
+     ▼
+PostgreSQL      ← database
+     │
+     ▼
+JSON Response
 ```
+
+- **route.ts** — only defines routes and maps them to controllers
+- **controller.ts** — handles request, calls service, returns JSON (no SQL here)
+- **service.ts** — all SQL/business logic lives here (no req/res here)
 
 ---
 
-### 👤 User Module
+## STEP 12 — User Module
 
-**Interface** — `user.interface.ts`
+### user.interface.ts
+> TypeScript interface for the User shape. Used for type safety in service and controller.
+
 ```ts
 export interface IUser {
-  name: string;
-  email: string;
-  password: string;
-  is_active?: boolean;
-  age: number;
+  name: string
+  email: string
+  password: string
+  is_active?: boolean   // optional — defaults to true in DB
+  age: number
 }
 ```
 
-**Service** — `user.service.ts`
+### user.service.ts — SQL Queries
 
-| Function | Description |
-|---|---|
-| `createUserIntoDB(payload)` | Insert new user |
-| `getAllUserFromDB()` | Select all users |
-| `getSingleUserFromDB(id)` | Select user by ID |
-| `updateSingleUserInDB(id, payload)` | Update user fields with COALESCE |
-| `deleteUserFromDB(id)` | Delete user by ID, returns deleted row |
+```ts
+// CREATE — insert new user, return the created row
+INSERT INTO users(name, email, password, is_active, age)
+VALUES($1, $2, $3, $4, $5) RETURNING *
 
-**Controller** — `user.controller.ts`
+// READ ALL — fetch every user
+SELECT * FROM users
 
-| Handler | Description |
-|---|---|
-| `createUser` | POST — creates a user |
-| `getAllUsers` | GET — returns all users |
-| `getSingleUser` | GET — returns user by id |
-| `updateSingleUser` | PUT — updates user by id |
-| `deleteUser` | DELETE — removes user by id |
+// READ ONE — fetch user by ID
+SELECT * FROM users WHERE id=$1
 
----
-
-### 🔑 Auth Module
-
-**Login Flow:**
-
-```
-POST /api/auth/login
-        │
-        ▼
-auth.controller.ts → loginUser()
-        │
-        ▼
-auth.service.ts → loginUserIntoDB()
-        │
-  1. SELECT * FROM users WHERE email=$1
-        │
-  2. bcrypt.compare(inputPassword, hashedPassword)
-        │
-  3. jwt.sign({ id, name, email, is_active }, JWT_SECRET, { expiresIn: '1d' })
-        │
-        ▼
-  Returns: { accessToken }
-```
-
----
-
-### 🪪 Profile Module
-
-**Create Profile Flow:**
-
-```
-POST /api/profile
-        │
-        ▼
-profile.controller.ts → createProfile()
-        │
-        ▼
-profile.service.ts → createProfileIntoDB()
-        │
-  1. SELECT * FROM users WHERE id=$1  (validate user exists)
-        │
-  2. INSERT INTO profiles(user_id, bio, address, phone, gender)
-        │
-        ▼
-  Returns: created profile row
-```
-
----
-
-## 🌐 API Endpoints
-
-### Users — `/api/users`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/users` | Create a new user |
-| `GET` | `/api/users` | Get all users |
-| `GET` | `/api/users/:id` | Get single user |
-| `PUT` | `/api/users/:id` | Update a user |
-| `DELETE` | `/api/users/:id` | Delete a user |
-
-### Auth — `/api/auth`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/login` | Login and get JWT token |
-
-### Profile — `/api/profile`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/profile` | Create user profile |
-
----
-
-## 📨 Request & Response Format
-
-### Create User — `POST /api/users`
-
-**Request Body:**
-```json
-{
-  "name": "Rijoan Maruf",
-  "email": "rijoan@example.com",
-  "password": "secret123",
-  "age": 25,
-  "is_active": true
-}
-```
-
-**Response:**
-```json
-{
-  "message": "User created successfully",
-  "data": { ...userRow }
-}
-```
-
----
-
-### Login — `POST /api/auth/login`
-
-**Request Body:**
-```json
-{
-  "email": "rijoan@example.com",
-  "password": "secret123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "User Login successfully",
-  "data": "eyJhbGciOiJIUzI1NiIsInR5..."
-}
-```
-
----
-
-### Create Profile — `POST /api/profile`
-
-**Request Body:**
-```json
-{
-  "user_id": 1,
-  "bio": "Full Stack Developer",
-  "address": "Dhaka, Bangladesh",
-  "phone": "01712345678",
-  "gender": "Male"
-}
-```
-
----
-
-### Update User — `PUT /api/users/:id`
-
-All fields are optional (uses `COALESCE` in SQL):
-
-```json
-{
-  "name": "New Name",
-  "age": 26
-}
-```
-
----
-
-## 🔐 JWT Flow
-
-```
-1. User sends email + password  →  POST /api/auth/login
-2. Server fetches user from DB by email
-3. bcrypt.compare(inputPass, storedHash)  →  verify password
-4. jwt.sign(payload, SECRET, { expiresIn: '1d' })  →  generate token
-5. Token returned to client
-6. Client stores token (localStorage / cookie)
-7. Client sends token in future requests:
-      Authorization: Bearer <token>
-8. Server middleware verifies token on protected routes
-```
-
-> **Token Payload:**
-> ```json
-> {
->   "id": 1,
->   "name": "Rijoan Maruf",
->   "email": "rijoan@example.com",
->   "is_active": true
-> }
-> ```
-
----
-
-## 🐛 Common Errors & Fixes
-
-| Error | Cause | Fix |
-|---|---|---|
-| `column "user_id" of relation "profiles" does not exist` | Table was created before the column was defined correctly | DROP and recreate the table |
-| `Type 'undefined' is not assignable to type 'string'` | `config.secrete` can be `undefined` | Use `config.secrete as string` or assert with `!` |
-| `SELECT ALL users WHERE email=$1` | Invalid SQL syntax | Change to `SELECT * FROM users WHERE email=$1` |
-| `REFERENCE users(id)` | Wrong SQL keyword | Change to `REFERENCES users(id)` |
-| Import without `.js` extension fails | TypeScript `nodenext` module resolution | Always use `.js` extension in imports |
-
----
-
-## 📝 Quick COALESCE Pattern (Partial Update)
-
-When updating, use `COALESCE` so that only the fields provided in the request body are updated:
-
-```sql
+// UPDATE — partial update using COALESCE
+// COALESCE($1, name) means: use $1 if provided, else keep existing 'name'
 UPDATE users SET
   name      = COALESCE($1, name),
   password  = COALESCE($2, password),
   age       = COALESCE($3, age),
   is_active = COALESCE($4, is_active)
-WHERE id = $5
-RETURNING *;
+WHERE id=$5 RETURNING *
+
+// DELETE — remove user, return the deleted row
+DELETE FROM users WHERE id=$1 RETURNING *
 ```
 
-This means: *"Use the new value if provided, otherwise keep the existing value."*
+> `RETURNING *` → sends back the affected row so the controller can return it in the response.
+
+### user.route.ts
+```ts
+router.post("/", userController.createUser)           // POST   /api/users
+router.get("/", userController.getAllUsers)            // GET    /api/users
+router.get("/:id", userController.getSingleUser)      // GET    /api/users/:id
+router.put("/:id", userController.updateSingleUser)   // PUT    /api/users/:id
+router.delete("/:id", userController.deleteUser)      // DELETE /api/users/:id
+```
 
 ---
 
-*Last updated: June 2026*
+## STEP 13 — Auth Module (Login + JWT)
+
+> No registration here — users are created via the user module. Auth only handles **login**.
+
+### auth.service.ts — Login flow:
+
+```ts
+// Step 1: Find user in DB by email
+SELECT * FROM users WHERE email=$1
+// If no user found → throw error (don't reveal whether email or password was wrong)
+
+// Step 2: Compare the plain input password against the hashed password in DB
+const match = await bcrypt.compare(inputPassword, user.password)
+if (!match) throw new Error("Invalid Credentials")  // passwords don't match
+
+// Step 3: Create a signed JWT token with user info as payload
+const token = jwt.sign(
+  { id, name, email, is_active },  // payload — data stored in the token
+  config.secrete as string,        // secret key — cast to string (env vars are string | undefined)
+  { expiresIn: '1d' }              // token expires in 1 day
+)
+
+return token  // send token back to the client
+```
+
+### auth.route.ts
+```ts
+router.post("/login", authController.loginUser)  // POST /api/auth/login
+```
+
+---
+
+## STEP 14 — Profile Module
+
+> Profile is linked to a user via `user_id` foreign key. One user = one profile.
+
+### profile.service.ts — Create profile:
+
+```ts
+// Step 1: Verify the user actually exists before creating a profile for them
+SELECT * FROM users WHERE id=$1
+if (rows.length === 0) throw new Error("User Not Exists!")  // guard check
+
+// Step 2: Insert the profile linked to that user
+INSERT INTO profiles(user_id, bio, address, phone, gender)
+VALUES ($1, $2, $3, $4, $5)
+// user_id is UNIQUE so each user can only have ONE profile
+```
+
+### profile.route.ts
+```ts
+router.post("/", profileController.createProfile)   // POST /api/profile
+```
+
+---
+
+## STEP 15 — Controller Pattern (same for all modules)
+
+> Every controller follows this exact try/catch structure. Memorize this once.
+
+```ts
+const doSomething = async (req: Request, res: Response) => {
+  try {
+    // Extract params or body from the request
+    const { id } = req.params
+
+    // Call the service function — it talks to the DB
+    const result = await someService.doSomethingInDB(id as string, req.body)
+
+    // If result is empty, the item wasn't found
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Not Found" })
+    }
+
+    // Return successful response with DB result
+    return res.status(200).json({ success: true, data: result.rows[0] })
+
+  } catch (error: any) {
+    // Catch any unexpected errors (DB down, bad query, etc.)
+    return res.status(500).json({ success: false, message: error.message })
+  }
+}
+```
+
+---
+
+## Key Reminders
+
+| ⚠️ Gotcha | 💡 Detail |
+|---|---|
+| Always use `.js` in imports | Required by `module: nodenext` even in `.ts` files |
+| `REFERENCES` not `REFERENCE` | SQL keyword — the plural matters |
+| `SELECT * FROM table` | Never use `SELECT ALL table` — invalid SQL |
+| `COALESCE($1, column)` | Use for partial update — keeps old value when new one is `null` |
+| `config.secrete as string` | Env vars are `string \| undefined` — cast needed for jwt.sign |
+| `RETURNING *` in SQL | Returns the row after INSERT/UPDATE/DELETE — needed for response |
+| `ON DELETE CASCADE` | Auto-deletes child rows (profiles) when parent (user) is deleted |
+| `IF NOT EXISTS` in CREATE TABLE | Safe to run on every startup — won't fail if table already exists |
