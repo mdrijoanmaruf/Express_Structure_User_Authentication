@@ -7,6 +7,7 @@ import { initDB, pool } from "./db/index.js";
 import { userRoute } from "./modules/user/user.route.js";
 import { profileRoute } from "./modules/profile/profile.route.js";
 import { authRoute } from "./modules/auth/auth.route.js";
+import fs from 'fs'
 const app: Application = express();
 
 
@@ -14,7 +15,13 @@ app.use(express.json());
 app.use(express.text());
 app.use(express.urlencoded({ extended: true })); // Extend will take nested data also
 
-
+app.use((req, res , next) => {
+  const log = `\nMethod -> ${req.method} - Time -> ${Date.now()} - URL -> ${req.url} \n`;
+  fs.appendFile("logger.txt" , log , (err) => {
+    console.log(err)
+  })
+  next()
+})
 
 initDB();
 
