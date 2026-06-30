@@ -4,3 +4,5 @@ Method -> GET - Time -> 1782725101892 - URL -> /api/users/
 Method -> POST - Time -> 1782725116246 - URL -> /api/profile 
 
 Method -> PUT - Time -> 1782725133559 - URL -> /api/users/1 
+
+Method -> POST - Time -> 1782824353412 - URL -> /api/profile 
