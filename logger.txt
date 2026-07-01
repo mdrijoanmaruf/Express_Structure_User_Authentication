@@ -6,3 +6,29 @@ Method -> POST - Time -> 1782725116246 - URL -> /api/profile
 Method -> PUT - Time -> 1782725133559 - URL -> /api/users/1 
 
 Method -> POST - Time -> 1782824353412 - URL -> /api/profile 
+
+Method -> GET - Time -> 1782824559396 - URL -> /api/users/ 
+
+Method -> GET - Time -> 1782824593685 - URL -> /api/users/ 
+
+Method -> GET - Time -> 1782824757414 - URL -> /api/users/ 
+
+Method -> GET - Time -> 1782825004963 - URL -> /api/users/ 
+
+Method -> GET - Time -> 1782825013317 - URL -> /api/users/ 
+
+Method -> GET - Time -> 1782825026100 - URL -> /api/users/ 
+
+Method -> POST - Time -> 1782825100655 - URL -> /api/auth/login 
+
+Method -> POST - Time -> 1782825206724 - URL -> /api/auth/login 
+
+Method -> POST - Time -> 1782825218748 - URL -> /api/auth/login 
+
+Method -> POST - Time -> 1782825221404 - URL -> /api/auth/login 
+
+Method -> POST - Time -> 1782825222718 - URL -> /api/auth/login 
+
+Method -> POST - Time -> 1782825232474 - URL -> /api/auth/login 
+
+Method -> POST - Time -> 1782825233843 - URL -> /api/auth/login 
